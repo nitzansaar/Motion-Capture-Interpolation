@@ -132,14 +132,24 @@ void Interpolator::BezierInterpolationQuaternion(Motion * pInputMotion, Motion *
   // students should implement this
 }
 
-void Interpolator::Euler2Quaternion(double angles[3], Quaternion<double> & q) 
+void Interpolator::Euler2Quaternion(double angles[3], Quaternion<double> & q)
 {
-  // students should implement this
+  double x = angles[0] * M_PI / 180.0;
+  double y = angles[1] * M_PI / 180.0;
+  double z = angles[2] * M_PI / 180.0;
+
+  Quaternion<double> qx(cos(x/2), sin(x/2), 0, 0);
+  Quaternion<double> qy(cos(y/2), 0, sin(y/2), 0);
+  Quaternion<double> qz(cos(z/2), 0, 0, sin(z/2));
+
+  q = qz * qy * qx;
 }
 
-void Interpolator::Quaternion2Euler(Quaternion<double> & q, double angles[3]) 
+void Interpolator::Quaternion2Euler(Quaternion<double> & q, double angles[3])
 {
-  // students should implement this
+  double R[9];
+  q.Quaternion2Matrix(R);
+  Rotation2Euler(R, angles);
 }
 
 Quaternion<double> Interpolator::Slerp(double t, Quaternion<double> & qStart, Quaternion<double> & qEnd_)
