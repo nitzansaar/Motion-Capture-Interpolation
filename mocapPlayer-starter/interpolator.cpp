@@ -124,7 +124,46 @@ void Interpolator::BezierInterpolationEuler(Motion * pInputMotion, Motion * pOut
 
 void Interpolator::LinearInterpolationQuaternion(Motion * pInputMotion, Motion * pOutputMotion, int N)
 {
-  // students should implement this
+  int inputLength = pInputMotion->GetNumFrames();
+
+  int startKeyframe = 0;
+  while (startKeyframe + N + 1 < inputLength)
+  {
+    int endKeyframe = startKeyframe + N + 1;
+
+    Posture * startPosture = pInputMotion->GetPosture(startKeyframe);
+    Posture * endPosture   = pInputMotion->GetPosture(endKeyframe);
+
+    pOutputMotion->SetPosture(startKeyframe, *startPosture);
+    pOutputMotion->SetPosture(endKeyframe,   *endPosture);
+
+    for (int frame = 1; frame <= N; frame++)
+    {
+      Posture interpolatedPosture;
+      double t = 1.0 * frame / (N + 1);
+
+      // interpolate root position linearly
+      interpolatedPosture.root_pos = startPosture->root_pos * (1-t) + endPosture->root_pos * t;
+
+      // interpolate each bone rotation via Slerp
+      for (int bone = 0; bone < MAX_BONES_IN_ASF_FILE; bone++)
+      {
+        Quaternion<double> qStart, qEnd;
+        Euler2Quaternion(startPosture->bone_rotation[bone].p, qStart);
+        Euler2Quaternion(endPosture->bone_rotation[bone].p,   qEnd);
+
+        Quaternion<double> q = Slerp(t, qStart, qEnd);
+        Quaternion2Euler(q, interpolatedPosture.bone_rotation[bone].p);
+      }
+
+      pOutputMotion->SetPosture(startKeyframe + frame, interpolatedPosture);
+    }
+
+    startKeyframe = endKeyframe;
+  }
+
+  for (int frame = startKeyframe + 1; frame < inputLength; frame++)
+    pOutputMotion->SetPosture(frame, *(pInputMotion->GetPosture(frame)));
 }
 
 void Interpolator::BezierInterpolationQuaternion(Motion * pInputMotion, Motion * pOutputMotion, int N)
@@ -154,9 +193,26 @@ void Interpolator::Quaternion2Euler(Quaternion<double> & q, double angles[3])
 
 Quaternion<double> Interpolator::Slerp(double t, Quaternion<double> & qStart, Quaternion<double> & qEnd_)
 {
-  // students should implement this
-  Quaternion<double> result;
-  return result;
+  Quaternion<double> qEnd = qEnd_;
+
+  // dot product = cos(theta)
+  double dot = qStart.Gets()*qEnd.Gets() + qStart.Getx()*qEnd.Getx()
+             + qStart.Gety()*qEnd.Gety() + qStart.Getz()*qEnd.Getz();
+
+  // take the shorter arc
+  if (dot < 0)
+  {
+    qEnd = -1.0 * qEnd;
+    dot = -dot;
+  }
+
+  // if quaternions are nearly identical, fall back to linear interpolation
+  if (dot > 1.0 - 1e-6)
+    return (1.0 - t) * qStart + t * qEnd;
+
+  double theta = acos(dot);
+  double sinTheta = sin(theta);
+  return (sin((1-t)*theta) / sinTheta) * qStart + (sin(t*theta) / sinTheta) * qEnd;
 }
 
 Quaternion<double> Interpolator::Double(Quaternion<double> p, Quaternion<double> q)
