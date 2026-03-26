@@ -1,4 +1,4 @@
-# CSCI 520 Assignment 2 — Motion Capture Interpolation
+# Motion Capture Interpolation
 
 ## 1. Introduction
 
