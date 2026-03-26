@@ -42,6 +42,35 @@ The results demonstrate two distinct axes of quality difference across the four 
 
 ---
 
-## 5. Conclusion
+## 5. Findings and Observations
+
+### Implemented Techniques
+
+All four interpolation methods were successfully implemented: Linear Euler, Bezier Euler, Linear Quaternion (SLERP), and Bezier SLERP Quaternion. The shared infrastructure — `Euler2Rotation`, `Euler2Quaternion`, `Quaternion2Euler`, and `Slerp` — was implemented first, as all four methods depend on these conversions. The De Casteljau algorithm was implemented in both a vector (Euler) and quaternion variant, and the `Double` operation was used to compute smooth Bezier control points on the unit quaternion sphere.
+
+### How Well Each Technique Works
+
+**Linear Euler** works adequately for slow, small-angle motions but fails visibly at large N values or when joints undergo rapid rotation. The graphs clearly show that at N=20, it already diverges meaningfully from the input signal at peak values, and it produces a catastrophic −125° spike in the root Z rotation where the dancer turns sharply. It is the weakest of the four methods.
+
+**Bezier Euler** is a clear improvement over Linear Euler in terms of smoothness — the C1 continuity eliminates the velocity kinks at keyframe boundaries, and the curves track the input amplitude more faithfully. However, it does not solve the fundamental problem of Euler angle interpolation. The same −125° spike appears in the root Z rotation, demonstrating that Bezier splines cannot compensate for an inappropriate rotation representation. It is smooth but not reliable for large rotations.
+
+**Linear Quaternion (SLERP)** eliminates the rotation artifact entirely. The root Z rotation stays close to the input even through the sharp turn where both Euler methods fail. However, it still produces C0-continuous motion, meaning velocity changes abruptly at keyframe boundaries. In the videos this appears as a slight mechanical quality — the motion is correct but not fully fluid at keyframe transitions.
+
+**Bezier SLERP Quaternion** is the best-performing method across all tested scenarios. It is both C1-continuous and geometrically correct in rotation space. In the martial arts videos, the interpolated skeleton follows the input skeleton's trajectory most closely, with smooth transitions through kicks, spins, and large arm movements. At N=40 — a very aggressive subsampling — it still produces plausible motion where the other methods show noticeable artifacts.
+
+### Strengths and Weaknesses
+
+| Method | Strengths | Weaknesses |
+|---|---|---|
+| **Linear Euler** | Simple to implement; fast | C0 only (kinks at keyframes); fails on large rotations; angle-space artifacts |
+| **Bezier Euler** | C1 smooth; better peak tracking | Still fails on large rotations; same angle-space artifacts as Linear Euler |
+| **SLERP Quaternion** | Correct rotation path; no gimbal lock | C0 only (kinks at keyframes); slightly more complex to implement |
+| **Bezier SLERP Quaternion** | C1 smooth + correct rotation path; best overall quality | Most expensive: multiple SLERP calls per bone per frame; most complex to implement |
+
+The most important observation from this assignment is that the choice of **rotation representation matters more than the choice of interpolation order**. Both Euler methods fail on the same joint at the same frame regardless of whether linear or Bezier interpolation is used. Switching from Euler to quaternion eliminates that class of artifact entirely. For any production use case involving non-trivial human motion, quaternion-based interpolation is strongly preferred.
+
+---
+
+## 6. Conclusion
 
 This report compared four motion capture interpolation methods across two joints and two motion characteristics. The results show that the choice of angle representation has a larger impact on correctness than the choice of interpolation order — both Euler methods produced a severe artifact on the root Z rotation that neither quaternion method exhibited. Between the two quaternion methods, Bezier SLERP quaternion is the clear winner, providing smooth, physically plausible reconstructions even at large N values. For practical applications where motion quality matters, Bezier SLERP quaternion is the recommended method, with the understanding that it carries higher computational cost due to multiple SLERP evaluations per bone per frame.
