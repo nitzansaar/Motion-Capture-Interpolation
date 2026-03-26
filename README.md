@@ -18,7 +18,17 @@ Motion capture (mocap) records the movement of a real performer by tracking phys
 
 ---
 
-## 3. Results
+## 3. Videos
+
+All three videos use `135_06-martialArts.amc` with N=40, showing the input motion and interpolated motion superimposed.
+
+- [Video 1 — Input vs Bezier Euler](mocapPlayer-starter/video1_input_vs_bezier_euler.mp4)
+- [Video 2 — Input vs SLERP Quaternion](mocapPlayer-starter/video2_input_vs_slerp_quat.mp4)
+- [Video 3 — Input vs Bezier SLERP Quaternion](mocapPlayer-starter/video3_input_vs_bezier_slerp_quat.mp4)
+
+---
+
+## 4. Results
 
 All four methods were evaluated on the `131_04-dance.amc` motion with `131-dance.asf` at N=20, meaning every 20th frame was kept as a keyframe and the 19 frames between each pair were reconstructed. Graphs 1 and 2 show the lfemur joint rotation around the X axis over frames 600–800. Graphs 3 and 4 show the root joint rotation around the Z axis over frames 200–500.
 
